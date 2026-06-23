@@ -105,7 +105,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             active_sending_tasks[user_id] = True
             sent_message_ids = [info_msg.message_id]
             was_cancelled = False
-            delete_at_time = time.time() + 28800
+            delete_at_time = time.time() + 28800 # 8 Ghante Tak Chalega
             
             delete_queue_table.insert({"chat_id": update.message.chat_id, "message_ids": sent_message_ids, "delete_at": delete_at_time})
             
@@ -152,6 +152,34 @@ async def cancel_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id == ADMIN_ID:
         await update.message.reply_text(f"👥 Users: {len(user_table.all())}\n📥 Downloads: {len(history_table.all())}")
+
+# 📊 Admin Ke Liye /logs Command Jo Indian Time Batayegi
+async def logs(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.effective_user or update.effective_user.id != ADMIN_ID: return
+    
+    all_history = history_table.all()
+    if not all_history:
+        await update.message.reply_text("❌ Abhi tak kisi user ne koi file download nahi ki hai.")
+        return
+        
+    # Sirf aakhri 15 entries dikhane ke liye taaki message bohot bada na ho
+    recent_history = all_history[-15:]
+    
+    report = "📊 **Recent File Download Logs (IST Time):**\n\n"
+    for entry in recent_history:
+        uname = f"@{entry['username']}" if entry.get('username') else "No Username"
+        report += (
+            f"👤 **Name:** {entry.get('first_name', 'Unknown')}\n"
+            f"🆔 **ID:** `{entry.get('user_id')}` | {uname}\n"
+            f"📂 **Files Taken:** {entry.get('total_files', 1)} file(s)\n"
+            f"⏰ **Time (IST):** `{entry.get('time')}`\n"
+            f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+        )
+    
+    try:
+        await update.message.reply_text(report, parse_mode="Markdown")
+    except Exception as e:
+        await update.message.reply_text(f"Error showing logs: {e}")
 
 async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.effective_user or update.effective_user.id != ADMIN_ID: return
@@ -209,6 +237,7 @@ async def main_async():
     
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("stats", stats))
+    app.add_handler(CommandHandler("logs", logs)) # Logs command yahan register ho gayi
     app.add_handler(CommandHandler("broadcast", broadcast))
     app.add_handler(CallbackQueryHandler(cancel_callback))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, store_file))
@@ -243,3 +272,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+        
