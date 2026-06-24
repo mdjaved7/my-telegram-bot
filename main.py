@@ -2,7 +2,6 @@ import os
 import asyncio
 import time
 from datetime import datetime
-from zoneinfo import ZoneInfo
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, ContextTypes, filters
 from tinydb import TinyDB, Query
@@ -76,13 +75,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     m = await update.message.reply_document(file['file_id'], protect_content=True)
                     sent_ids.append(m.message_id)
                 except: break
-                        # ... ऊपर का कोड ...
             delete_queue_table.insert({"chat_id": update.message.chat_id, "message_ids": sent_ids, "delete_at": time.time() + 28800})
-            
-            # यहाँ अपना नया मैसेज पेस्ट करें:
             await update.message.reply_text("𝙷𝙸𝙽𝙳𝙸 𝚂𝚃𝙾𝚁𝚈\n❤️ 𝙷𝙴𝚈 𝙱𝚁𝙾 🇮🇳 \n\n📂 𝙵𝙸𝙻𝙴𝚂 𝚆𝙸𝙻𝙻 𝙱𝙴 𝙳𝙴𝙻𝙴𝚃𝙴𝙳 \n𝙰𝙵𝚃𝙴𝚁  𝟾 𝙷𝙾𝚄𝚁𝚂  𝙿𝙻𝙴𝙰𝚂𝙴 \n𝚂𝙰𝚅𝙴 𝚃𝙷𝙴𝙼 𝚂𝙾𝙼𝙴𝚆𝙷𝙴𝚁𝙴 𝚂𝙰𝙵𝙴.")
-            # ... नीचे का कोड ...
-
     else:
         await update.message.reply_text("👋 Hello! I am a permanent batch file store bot.")
 
@@ -98,8 +92,9 @@ async def check_logs(update, context):
 
 async def broadcast(update, context):
     if update.effective_user.id != ADMIN_ID: return
+    msg = " ".join(context.args)
     for user in user_table.all():
-        try: await context.bot.send_message(user['user_id'], " ".join(context.args))
+        try: await context.bot.send_message(user['user_id'], msg)
         except: pass
     await update.message.reply_text("✅ Broadcast complete.")
 
@@ -113,7 +108,11 @@ async def store_file(update, context):
 async def process_batch_queue(context, message):
     await asyncio.sleep(60)
     raw_files = user_queues.pop(ADMIN_ID)
-    saved_files = [{"file_id": m.document.file_id, "file_type": "document"} for m in raw_files if m.document]
+    saved_files = []
+    for m in raw_files:
+        if m.document:
+            new_msg = await context.bot.copy_message(chat_id=PRIVATE_STORE_ID, from_chat_id=m.chat_id, message_id=m.message_id)
+            saved_files.append({"file_id": new_msg.document.file_id})
     batch_key = f"batch_{int(time.time())}"
     batch_table.insert({"batch_key": batch_key, "files": saved_files})
     await message.reply_text(f"✅ Batch stored! Link: https://t.me/{(await context.bot.get_me()).username}?start={batch_key}")
@@ -121,27 +120,13 @@ async def process_batch_queue(context, message):
 # --- Main ---
 if __name__ == "__main__":
     keep_alive()
-    
     app_bot = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).post_init(lambda app: asyncio.create_task(auto_delete_monitor(app))).build()
-    
     app_bot.add_handlers([
         CommandHandler("start", start), 
         CommandHandler("stats", stats), 
         CommandHandler("logs", check_logs), 
         CommandHandler("broadcast", broadcast), 
-        MessageHandler(filters.ChatType.PRIVATE & filters.ALL & ~filters.COMMAND, store_file)
+        MessageHandler(filters.ChatType.PRIVATE & filters.Document.ALL & ~filters.COMMAND, store_file)
     ])
-    
-    print("🤖 Bot is starting...")
-    # एरर-फ्री लूप सेटअप
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    loop.run_until_complete(app_bot.initialize())
-    loop.create_task(app_bot.updater.start_polling())
-    loop.create_task(app_bot.start())
-    loop.run_forever()
+    app_bot.run_polling()
     
