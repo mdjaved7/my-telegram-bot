@@ -121,6 +121,7 @@ async def process_batch_queue(context, message):
 if __name__ == "__main__":
     keep_alive()
     app_bot = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).post_init(lambda app: asyncio.create_task(auto_delete_monitor(app))).build()
+    
     app_bot.add_handlers([
         CommandHandler("start", start), 
         CommandHandler("stats", stats), 
@@ -128,5 +129,7 @@ if __name__ == "__main__":
         CommandHandler("broadcast", broadcast), 
         MessageHandler(filters.ChatType.PRIVATE & filters.Document.ALL & ~filters.COMMAND, store_file)
     ])
-    app_bot.run_polling()
     
+    print("🤖 Bot is starting...")
+    # बस इसी एक लाइन से बॉट चलाएं, बाकी सब हटा दें
+    app_bot.run_polling()
