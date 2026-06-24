@@ -119,12 +119,10 @@ async def process_batch_queue(context, message):
 
 # --- Main ---
 if __name__ == "__main__":
-    keep_alive() # Flask चलाएं
+    keep_alive() 
     
-    # बॉट बिल्ड करें
-    app_bot = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).post_init(lambda app: asyncio.create_task(auto_delete_monitor(app))).build()
+    app_bot = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
     
-    # हैंडलर्स जोड़ें
     app_bot.add_handlers([
         CommandHandler("start", start), 
         CommandHandler("stats", stats), 
@@ -134,6 +132,7 @@ if __name__ == "__main__":
     ])
     
     print("🤖 Bot is starting...")
-    # सिर्फ यह एक लाइन चाहिए, बाकी सब हटा दें
-    app_bot.run_polling()
-
+    # इसे 'app_bot.run_polling()' की जगह इस्तेमाल करें:
+    asyncio.run(app_bot.initialize())
+    asyncio.run(app_bot.updater.start_polling())
+    asyncio.run(app_bot.updater.idle())
