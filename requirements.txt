@@ -1,3 +1,4 @@
 python-telegram-bot
 tinydb
 flask
+tzdata
