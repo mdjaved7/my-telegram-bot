@@ -115,7 +115,27 @@ async def process_batch_queue(context, message):
 
 # --- Main ---
 if __name__ == "__main__":
+    # Flask को बैकग्राउंड में शुरू करें
     keep_alive()
-    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).post_init(lambda app: asyncio.create_task(auto_delete_monitor(app))).build()
-    app.add_handlers([CommandHandler("start", start), CommandHandler("stats", stats), CommandHandler("logs", check_logs), CommandHandler("broadcast", broadcast), MessageHandler(filters.ChatType.PRIVATE & filters.ALL & ~filters.COMMAND, store_file)])
-    app.run_polling()
+    
+    # बॉट का बिल्डर
+    app_bot = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).post_init(lambda app: asyncio.create_task(auto_delete_monitor(app))).build()
+    
+    # हैंडल्स जोड़ें
+    app_bot.add_handlers([
+        CommandHandler("start", start), 
+        CommandHandler("stats", stats), 
+        CommandHandler("logs", check_logs), 
+        CommandHandler("broadcast", broadcast), 
+        MessageHandler(filters.ChatType.PRIVATE & filters.ALL & ~filters.COMMAND, store_file)
+    ])
+    
+    # Render पर 'run_polling' की जगह 'run_webhook' बेहतर है, 
+    # लेकिन अगर आप 'run_polling' ही चलाना चाहते हैं तो इसे 'loop' के जरिए चलाएं:
+    print("🤖 Bot is starting...")
+    import asyncio
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(app_bot.initialize())
+    loop.create_task(app_bot.updater.start_polling())
+    loop.create_task(app_bot.start())
+    loop.run_forever()
