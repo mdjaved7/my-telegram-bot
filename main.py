@@ -119,7 +119,11 @@ async def process_batch_queue(context, message):
 
 # --- Main ---
 if __name__ == "__main__":
-    keep_alive()  # Flask को शुरू करें
+    keep_alive()  # Flask को चालू रखें
+    
+    # बॉट को इनिशियलाइज़ करने के लिए नया लूप बनाएँ
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     
     app_bot = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).post_init(lambda app: asyncio.create_task(auto_delete_monitor(app))).build()
     
@@ -132,9 +136,5 @@ if __name__ == "__main__":
     ])
     
     print("🤖 Bot is starting...")
-    
-    # यह वाला लूप रेंडर पर 'no running event loop' एरर को आने से रोकेगा
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(app_bot.initialize())
-    loop.run_until_complete(app_bot.updater.start_polling())
-    loop.run_forever()
+    # अब लूप के जरिए बॉट चलाएं
+    app_bot.run_polling()
