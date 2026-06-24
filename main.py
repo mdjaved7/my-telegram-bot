@@ -13,7 +13,7 @@ from threading import Thread
 app_flask = Flask('')
 @app_flask.route('/')
 def home(): return "Bot is running!"
-def run_flask(): app_flask.run(host='0.0.0.0', port=8080)
+def run_flask(): app_flask.run(host='0.0.0.0', port=int(os.environ.get("PORT", 8080)))
 def keep_alive():
     t = Thread(target=run_flask)
     t.start()
@@ -76,8 +76,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     m = await update.message.reply_document(file['file_id'], protect_content=True)
                     sent_ids.append(m.message_id)
                 except: break
+                        # ... ऊपर का कोड ...
             delete_queue_table.insert({"chat_id": update.message.chat_id, "message_ids": sent_ids, "delete_at": time.time() + 28800})
-            await update.message.reply_text("❤️ Files will be deleted after 8 hours.")
+            
+            # यहाँ अपना नया मैसेज पेस्ट करें:
+            await update.message.reply_text("𝙷𝙸𝙽𝙳𝙸 𝚂𝚃𝙾𝚁𝚈\n❤️ 𝙷𝙴𝚈 𝙱𝚁𝙾 🇮🇳 \n\n📂 𝙵𝙸𝙻𝙴𝚂 𝚆𝙸𝙻𝙻 𝙱𝙴 𝙳𝙴𝙻𝙴𝚃𝙴𝙳 \n𝙰𝙵𝚃𝙴𝚁  𝟾 𝙷𝙾𝚄𝚁𝚂  𝙿𝙻𝙴𝙰𝚂𝙴 \n𝚂𝙰𝚅𝙴 𝚃𝙷𝙴𝙼 𝚂𝙾𝙼𝙴𝚆𝙷𝙴𝚁𝙴 𝚂𝙰𝙵𝙴.")
+            # ... नीचे का कोड ...
+
     else:
         await update.message.reply_text("👋 Hello! I am a permanent batch file store bot.")
 
@@ -115,13 +120,10 @@ async def process_batch_queue(context, message):
 
 # --- Main ---
 if __name__ == "__main__":
-    # Flask को बैकग्राउंड में शुरू करें
     keep_alive()
     
-    # बॉट का बिल्डर
     app_bot = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).post_init(lambda app: asyncio.create_task(auto_delete_monitor(app))).build()
     
-    # हैंडल्स जोड़ें
     app_bot.add_handlers([
         CommandHandler("start", start), 
         CommandHandler("stats", stats), 
@@ -130,12 +132,16 @@ if __name__ == "__main__":
         MessageHandler(filters.ChatType.PRIVATE & filters.ALL & ~filters.COMMAND, store_file)
     ])
     
-    # Render पर 'run_polling' की जगह 'run_webhook' बेहतर है, 
-    # लेकिन अगर आप 'run_polling' ही चलाना चाहते हैं तो इसे 'loop' के जरिए चलाएं:
     print("🤖 Bot is starting...")
-    import asyncio
-    loop = asyncio.get_event_loop()
+    # एरर-फ्री लूप सेटअप
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
     loop.run_until_complete(app_bot.initialize())
     loop.create_task(app_bot.updater.start_polling())
     loop.create_task(app_bot.start())
     loop.run_forever()
+    
