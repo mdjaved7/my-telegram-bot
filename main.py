@@ -119,22 +119,36 @@ async def process_batch_queue(context, message):
 
 # --- Main ---
 if __name__ == "__main__":
-    keep_alive()  # Flask को चालू रखें
-    
-    # बॉट को इनिशियलाइज़ करने के लिए नया लूप बनाएँ
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    
-    app_bot = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).post_init(lambda app: asyncio.create_task(auto_delete_monitor(app))).build()
-    
+    # 1. Flask को शुरू करें
+    keep_alive()
+
+    # 2. बॉट बिल्ड करें (post_init हटा दें)
+    app_bot = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+
+    # 3. हैंडलर्स जोड़ें
     app_bot.add_handlers([
-        CommandHandler("start", start), 
-        CommandHandler("stats", stats), 
-        CommandHandler("logs", check_logs), 
-        CommandHandler("broadcast", broadcast), 
+        CommandHandler("start", start),
+        CommandHandler("stats", stats),
+        CommandHandler("logs", check_logs),
+        CommandHandler("broadcast", broadcast),
         MessageHandler(filters.ChatType.PRIVATE & filters.Document.ALL & ~filters.COMMAND, store_file)
     ])
-    
-    print("🤖 Bot is starting...")
-    # अब लूप के जरिए बॉट चलाएं
-    app_bot.run_polling()
+
+    # 4. बॉट को चलाने का सही तरीका (asyncio के साथ)
+    async def main():
+        # यहाँ auto_delete_monitor को एक टास्क के रूप में शुरू करें
+        asyncio.create_task(auto_delete_monitor(app_bot))
+        
+        await app_bot.initialize()
+        await app_bot.updater.start_polling()
+        await app_bot.start()
+        print("🤖 Bot is starting...")
+        
+        # बॉट को तब तक जीवित रखें जब तक स्टॉप न हो
+        await asyncio.Event().wait()
+
+    # लूप चलाएं
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass
