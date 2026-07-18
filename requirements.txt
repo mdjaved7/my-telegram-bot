@@ -1,2 +1,3 @@
-python-telegram-bot
-tinydb
+m3u8==6.0.0
+python-telegram-bot==22.8
+Requests==2.34.2
