@@ -35,8 +35,8 @@ DOWNLOAD_DIR = Path("downloads")
 DOWNLOAD_DIR.mkdir(exist_ok=True)
 
 # Pocket FM API endpoints
-POCKETFM_BASE = "https://pocketfm.com"
-POCKETFM_API = "https://api.pocketfm.com"  # May change; fallback to scraping
+POCKETFM_BASE = "https://storytvulimate.ixadrama.in"
+POCKETFM_API = "https://storytvulimate.ixadrama.in"  # May change; fallback to scraping
 
 # Headers to mimic a real browser
 HEADERS = {
